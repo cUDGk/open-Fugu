@@ -1,0 +1,69 @@
+# Copy this file and set the IDs to the exact values returned by:
+#   curl http://127.0.0.1:8080/v1/models
+# Do not assume local filenames are the exposed model IDs.
+
+front_model: local-moe-fugu
+front_api_key: local-frontdoor-key
+
+backend:
+  base_url: http://127.0.0.1:8080/v1
+  api_key: local-dev-key
+  timeout_s: 900
+
+hardware_profile:
+  name: ryzen9-7940hs-64gb
+  os: windows
+  ram_gb: 64
+  max_loaded_models: 1
+  parallel_model_calls: false
+  default_ctx: 12288
+  deep_ctx: 16384
+
+scheduler:
+  strategy: sequential_hotload
+  use_llm_router: false
+  max_concurrent_model_calls: 1
+  verify_only_when_risky: true
+  max_repair_rounds: 1
+  log_content: false
+
+models:
+  gemma:
+    # Example only. Replace with the real ID from /v1/models.
+    id: "gemma-4-26B-A4B-it-Q4_K_M.gguf"
+    role: planner_synthesizer
+    temperature: 0.2
+    max_tokens: 5000
+    extra_body:
+      min_p: 0.01
+    system: >
+      You are Gemma, the planner and structural synthesizer.
+      Create public task specifications, identify explicit constraints, and produce coherent final structure.
+      Do not expose hidden chain-of-thought.
+
+  qwen:
+    # Example only. Replace with the real ID from /v1/models.
+    id: "Qwen3.6-35B-A3B-Q4_K_M.gguf"
+    role: primary_worker
+    temperature: 0.2
+    max_tokens: 7000
+    extra_body:
+      min_p: 0.01
+    system: >
+      You are Qwen, the primary implementation worker.
+      Focus on code, debugging, algorithms, concrete procedures, edge cases, and repository-level reasoning.
+      Do not expose hidden chain-of-thought.
+
+  glm:
+    # Example only. Replace with the real ID from /v1/models.
+    id: "GLM-4.7-Flash-UD-Q4_K_XL.gguf"
+    role: verifier_critic
+    temperature: 0.1
+    max_tokens: 4000
+    extra_body:
+      min_p: 0.01
+      repeat_penalty: 1.0
+    system: >
+      You are GLM, the verifier and critic.
+      Detect contradictions, unsupported claims, missing requirements, and practical failure modes.
+      When asked for JSON, return JSON only.

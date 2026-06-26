@@ -1,0 +1,119 @@
+# User-specific local GGUF config for <MINIPC-HOST>.
+# Backend llama.cpp router must expose these exact IDs on /v1/models.
+
+front_model: local-moe-fugu
+front_api_key: local-frontdoor-key
+
+backend:
+  base_url: http://127.0.0.1:8080/v1
+  api_key: local-dev-key
+  timeout_s: 900
+
+hybrid_backend:
+  enabled: true
+  default_backend: cpu
+  fallback_backend: cpu
+  backends:
+    cpu:
+      base_url: http://127.0.0.1:8080/v1
+      api_key: local-dev-key
+      timeout_s: 900
+      model_names: [gemma, qwen, glm]
+    vulkan:
+      base_url: http://127.0.0.1:8081/v1
+      api_key: local-dev-key
+      timeout_s: 900
+      model_names: [qwen]
+  route_policy:
+    vulkan_backend: vulkan
+    agents: [qwen]
+    min_max_tokens: 1
+    min_input_chars: 1
+    stages:
+      - fast_answer
+      - balanced_primary_answer
+      - primary_solution
+      - compact_deep_qwen
+      - compact_ultra_qwen
+      - ultra_qwen_solution
+      - repair
+
+hardware_profile:
+  name: ryzen9-7940hs-64gb-minipc
+  os: windows
+  ram_gb: 64
+  max_loaded_models: 2
+  parallel_model_calls: false
+  default_ctx: 12288
+  deep_ctx: 16384
+
+scheduler:
+  strategy: sequential_hotload
+  use_llm_router: true
+  max_concurrent_model_calls: 1
+  verify_only_when_risky: true
+  avoid_model_swap_on_followup: true
+  fast_bias: true
+  fast_primary: qwen
+  verify_code_by_default: false
+  max_repair_rounds: 1
+  log_content: false
+
+router_06b:
+  enabled: true
+  model_path: "C:/llm/models/Qwen3-0.6B"
+  head_path: "C:/llm/local-moe-fugu-7940hs/artifacts/router_06b_seed_head.npz"
+  cache_dir: "C:/llm/local-moe-fugu-7940hs/.cache/fugu_router_06b"
+  device: cpu
+  dtype: float32
+  torch_threads: 4
+  max_input_tokens: 1536
+  max_input_chars: 12000
+  agent_min_confidence: 0.42
+  mode_min_margin: 0.04
+  risk_threshold: 0.36
+  retry_after_s: 300
+  fail_closed: false
+
+models:
+  gemma:
+    id: "gemma-3-12b-it-Q4_K_M"
+    role: planner_synthesizer
+    temperature: 0.2
+    max_tokens: 4096
+    extra_body:
+      min_p: 0.01
+    system: >
+      Fast generalist. Answer clearly and concisely. Do not expose hidden chain-of-thought.
+
+  qwen:
+    id: "Qwen3-Coder-30B-A3B-Instruct-Q4_K_M"
+    role: primary_worker
+    temperature: 0.2
+    max_tokens: 7000
+    extra_body:
+      min_p: 0.01
+    system: >
+      Coding and reasoning worker. Be concrete, correct, and concise. Do not expose hidden chain-of-thought.
+
+  glm:
+    id: "GLM-4.7-Flash-UD-Q4_K_XL"
+    role: verifier_critic
+    temperature: 0.1
+    max_tokens: 4000
+    extra_body:
+      min_p: 0.01
+      repeat_penalty: 1.0
+    system: >
+      Verifier and critic. Find contradictions, missing requirements, and practical failure modes.
+      When asked for JSON, return JSON only.
+
+workflow_policy:
+  fast:
+    description: One model only.
+  balanced:
+    description: Primary once, verifier only if risky.
+  deep:
+    description: Gemma public spec, Qwen solution, GLM verification, Qwen repair if needed.
+  ultra:
+    description: Gemma spec, Qwen solution, GLM critique, Gemma synthesis, GLM final verification.

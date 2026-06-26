@@ -1,0 +1,73 @@
+front_model: local-moe-fugu
+front_api_key: local-frontdoor-key
+
+backend:
+  base_url: http://127.0.0.1:8080/v1
+  api_key: local-dev-key
+  timeout_s: 900
+
+hardware_profile:
+  name: ryzen9-7940hs-64gb
+  os: windows
+  ram_gb: 64
+  max_loaded_models: 1
+  parallel_model_calls: false
+  default_ctx: 12288
+  deep_ctx: 16384
+
+scheduler:
+  strategy: sequential_hotload
+  use_llm_router: false
+  max_concurrent_model_calls: 1
+  verify_only_when_risky: true
+  avoid_model_swap_on_followup: true
+  max_repair_rounds: 1
+  log_content: false
+
+models:
+  gemma:
+    id: "bartowski/google_gemma-4-26B-A4B-it-GGUF:Q4_K_M"
+    role: planner_synthesizer
+    temperature: 0.2
+    max_tokens: 5000
+    extra_body:
+      min_p: 0.01
+    system: >
+      You are Gemma, the planner and structural synthesizer.
+      Create public task specifications, identify explicit constraints, and produce coherent final structure.
+      Do not expose hidden chain-of-thought.
+
+  qwen:
+    id: "bartowski/Qwen_Qwen3.6-35B-A3B-GGUF:Q4_K_M"
+    role: primary_worker
+    temperature: 0.2
+    max_tokens: 7000
+    extra_body:
+      min_p: 0.01
+    system: >
+      You are Qwen, the primary implementation worker.
+      Focus on code, debugging, algorithms, concrete procedures, edge cases, and repository-level reasoning.
+      Do not expose hidden chain-of-thought.
+
+  glm:
+    id: "unsloth/GLM-4.7-Flash-GGUF:UD-Q4_K_XL"
+    role: verifier_critic
+    temperature: 0.1
+    max_tokens: 4000
+    extra_body:
+      min_p: 0.01
+      repeat_penalty: 1.0
+    system: >
+      You are GLM, the verifier and critic.
+      Detect contradictions, unsupported claims, missing requirements, and practical failure modes.
+      When asked for JSON, return JSON only.
+
+workflow_policy:
+  fast:
+    description: One model only.
+  balanced:
+    description: Primary once, verifier only if risky.
+  deep:
+    description: Gemma public spec, Qwen solution, GLM verification, Qwen repair if needed.
+  ultra:
+    description: Gemma spec, Qwen solution, GLM critique, Gemma synthesis, GLM final verification.

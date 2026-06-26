@@ -1,0 +1,18 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# ログ（ディレクトリだけ残し、ベンチ実行結果は追跡しない）
+logs/*
+!logs/.gitkeep
+
+# モデル重み（巨大、リポには含めない。C:\llm\models に置く）
+*.gguf
+
+# OS / エディタ
+Thumbs.db
+.DS_Store
+.vscode/
