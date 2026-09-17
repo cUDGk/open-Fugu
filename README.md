@@ -10,7 +10,7 @@
 [![OpenAI Compatible](https://img.shields.io/badge/API-OpenAI%20compatible-412991?style=flat&logo=openai&logoColor=white)](examples/client_test.py)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=flat)](LICENSE)
 
-**Sakana Fugu風の「複数モデル協調」を、ディスクリートGPUなしの 64GB RAM 機で成立させる。**
+**Sakana Fugu風の「複数モデル協調」を、ディスクリートGPUなしの 64GB RAM 機で成立させるわよ。**
 
 ---
 
